@@ -8,85 +8,88 @@ from itertools import combinations
 import random
 
 
-# folders50 = sorted(glob.glob("./train50/*"))
-# foldersfull = sorted(glob.glob("./train5/*"))
+folders50 = sorted(glob.glob("./train50/*"))
+foldersfull = sorted(glob.glob("./trainfull/*"))
+foldersval = sorted(glob.glob("./validation/*"))
 
 # # print(len(folders50))
 # # print(len(foldersfull))
 # # print((folders))
 
-# images_list = []
-# # image_num = []
-# reward_list = []
+images_list = []
+# image_num = []
+reward_list = []
 
-# for folder in foldersfull:
-#     for f in sorted(glob.glob(folder+"/*.png")):
-#         images_list.append(f)
-#     reward_list.append(folder+"/rew.csv")
+
+for folder in foldersfull:
+    for f in sorted(glob.glob(folder+"/*.png")):
+        images_list.append(f)
+    reward_list.append(folder+"/rew.csv")
 	
-# read_images = []        
+read_images = []        
+
 
 # # print(len(images_list))
 # # print((images_list[0:10]))
 # # print((reward_list))
 # # print(image_num)
 
-# c=0
-# for image in images_list:
-#     c+=1
-#     if(c%2000==0):
-#     	print(c/2000)
-#     # print(c)
-#     read_images.append(cv2.imread(image, cv2.IMREAD_GRAYSCALE))
+c=0
+for image in images_list:
+    c+=1
+    if(c%2000==0):
+    	print(c/2000)
+    # print(c)
+    img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+    img = cv2.resize(img, (105, 80))
+    read_images.append(img)
 
-# X = []
+X = []
 
-# for i in range(len(read_images)):
-# 	temp = np.array(read_images[i])	
-# 	X.append(temp.flatten())
+for i in range(len(read_images)):
+	temp = np.array(read_images[i])	
+	X.append(temp.flatten())
 
 
-# X = np.array(X)
-# print(X.shape)
-# np.save("dataX", X)
+X = np.array(X)
+print(X.shape)
+np.save("dataX", X)
 
-# Y = []
+Y = []
 
-# for rewards in reward_list:
-# 	temp = []
-# 	with open(rewards) as fileX:
-# 		x_reader = csv.reader(fileX)
-# 		for row in x_reader:
-# 			temp.append(int(float(row[0])))
-# 		Y.append(temp)
+for rewards in reward_list:
+	temp = []
+	with open(rewards) as fileX:
+		x_reader = csv.reader(fileX)
+		for row in x_reader:
+			temp.append(int(float(row[0])))
+		Y.append(temp)
 
-# Y = np.array(Y)
+Y = np.array(Y)
 # print(len(Y[0]))
 
-# np.save("dataY", Y)
+np.save("dataY", Y)
 
 
-# X = np.load("dataX.npy")
+X = np.load("dataX.npy")
 Y = np.load("dataY.npy")
 
-# print(X.shape)
-# print(Y.shape)
+print(X.shape)
+print(Y.shape)
 
-# num=2
-# for i in range(2):
-# 	num+=len(Y[i])
-
-
-# print(num)
-
-# pca = PCA(n_components=50)
-# pca.fit(X[0:num])
-
-# Xnew = pca.transform(X)
-
-# np.save("dataXnew", Xnew)
+num=50
+for i in range(50):
+	num+=len(Y[i])
 
 
+print(num)
+
+pca = PCA(n_components=50)
+pca.fit(X[0:num])
+
+Xnew = pca.transform(X)
+
+np.save("dataXnew", Xnew)
 
 
 Xnew = np.load("dataXnew.npy")
@@ -164,6 +167,55 @@ Ytrain = np.array(Ytrain)
 print(Xtrain.shape)
 print(Ytrain.shape)
 
+
+np.save("Xtrain", Xtrain)
+np.save("Ytrain", Ytrain)
+
+Xtrain = np.load("Xtrain.npy")
+Ytrain = np.load("Ytrain.npy")
+print(Xtrain.shape)
+print(Ytrain.shape)
+
+
 # print(type(getcomb(7)[0]))
 # print(list(getcomb(7)[0]))
 # print(type(list(getcomb(7)[0])))
+
+
+valX = []        
+valY = []
+
+for folder in foldersval:
+	imagesval_list = []
+	reading_images = []
+    for f in sorted(glob.glob(folder+"/*.png")):
+        imagesval_list.append(f)
+	for image in images_list:
+	    read_images.append(cv2.imread(image, cv2.IMREAD_GRAYSCALE))
+        img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+	    img = cv2.resize(img, (105, 80))
+    	reading_images.append(img)
+
+    tempo = []
+
+	for i in range(len(reading_images)):
+		temp = np.array(reading_images[i])	
+		tempimg = temp.flatten()
+		tempimg = pca.transform(tempimg)	    
+		tempo += list(tempimg)
+
+	valX.append(tempo)
+
+
+
+with open("./validation/rewards.csv") as fileX:
+	x_reader = csv.reader(fileX)
+	for row in x_reader:
+		valY.append(int(float(row[0])))
+
+valX = np.array(valX)
+valY = np.array(valY)
+
+
+print(valX.shape)
+print(valY.shape)
