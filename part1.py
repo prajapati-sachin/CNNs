@@ -5,6 +5,8 @@ import pylab as plt
 import csv
 from sklearn.decomposition import PCA
 from itertools import combinations
+import random
+
 
 # folders50 = sorted(glob.glob("./train50/*"))
 # foldersfull = sorted(glob.glob("./train5/*"))
@@ -90,6 +92,9 @@ Y = np.load("dataY.npy")
 Xnew = np.load("dataXnew.npy")
 print(Xnew.shape)
 
+def decision(probability):
+	return random.random() < probability
+
 def tolist(t):
 	temp = [] 
 	for i in range(4):
@@ -134,9 +139,24 @@ for i in range(len(Yindexing)):
 				for l in range(len(templist)):
 					final_index = Yindexing[i] + templist[l]
 					temptrain += list(Xnew[final_index])
-
 				Xtrain.append(temptrain)
 				Ytrain.append([1])
+		else:
+			if(decision(0.15)):
+				combs = getcomb(j)
+				for k in range(len(combs)):
+					if(decision(0.5)):
+						templist = combs[k] 			
+						templist.append(j-1)
+						# print(templist)
+						temptrain = []
+						for l in range(len(templist)):
+							final_index = Yindexing[i] + templist[l]
+							temptrain += list(Xnew[final_index])
+						Xtrain.append(temptrain)
+						Ytrain.append([Y[i][j]])
+
+
 
 
 Xtrain = np.array(Xtrain)
