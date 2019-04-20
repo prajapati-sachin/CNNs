@@ -3,7 +3,7 @@ import cv2
 import glob
 import pylab as plt
 import csv
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, IncrementalPCA
 from itertools import combinations
 import random
 from joblib import dump, load
@@ -19,35 +19,36 @@ foldersfull = sorted(glob.glob("./trainfull/*"))
 
 ##########################################################################
 # FOR PCA
-images_list50 = []
+# images_list50 = []
 
-for folder in folders50:
-    for f in sorted(glob.glob(folder+"/*.png")):
-        images_list50.append(f)
-
-
-
-read_images50 = []        
-c=0
-for image in images_list50:
-    c+=1
-    if(c%2000==0):
-    	print("Input of PCA data: ", c/2000)
-    # print(c)
-    read_images50.append(cv2.imread(image, cv2.IMREAD_GRAYSCALE))
+# for folder in folders50:
+#     for f in sorted(glob.glob(folder+"/*.png")):
+#         images_list50.append(f)
 
 
-X50 = []
 
-for i in range(len(read_images50)):
-	temp = np.array(read_images50[i])	
-	X50.append(temp.flatten())
+# read_images50 = []        
+# c=0
+# for image in images_list50:
+#     c+=1
+#     if(c%2000==0):
+#     	print("Input of PCA data: ", c/2000)
+#     # print(c)
+#     read_images50.append(cv2.imread(image, cv2.IMREAD_GRAYSCALE))
 
-X50 = np.array(X50)
 
-pca = PCA(n_components=50)
-pca.fit(X50)
-dump(pca, 'pca50.joblib')
+# X50 = []
+
+# for i in range(len(read_images50)):
+# 	temp = np.array(read_images50[i])	
+# 	X50.append(temp.flatten())
+
+# X50 = np.array(X50)
+# print(X50.shape)
+# # pca = PCA(n_components=50)
+# pca = IncrementalPCA(n_components=50, batch_size=100)
+# pca.fit(X50)
+# dump(pca, 'pca50.joblib')
 
 #Loading
 pca = load('pca50.joblib')
@@ -55,55 +56,55 @@ pca = load('pca50.joblib')
 ##########################################################################
 #TAKING INPUT OF ALL IMAGES AND REDUCING DIMENSION AT SAME TIME
 
-images_list = []
-reward_list = []
-for folder in foldersfull:
-    for f in sorted(glob.glob(folder+"/*.png")):
-        images_list.append(f)
-    reward_list.append(folder+"/rew.csv")
+# images_list = []
+# reward_list = []
+# for folder in foldersfull:
+#     for f in sorted(glob.glob(folder+"/*.png")):
+#         images_list.append(f)
+#     reward_list.append(folder+"/rew.csv")
 
-Xfull = []
+# Xfull = []
 
-# read_images = []        
-c=0
-for image in images_list:
-    c+=1
-    if(c%2000==0):
-    	print("Input of full data: ", c/2000)
-    img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
-    temp = np.array(img)
-    temp = temp.flatten()
-    temp = temp.reshape(33600, 1)
-    temp = temp.transpose()
-    temp = pca.transform(temp)
-    temp = temp.reshape(50)
-    Xfull.append(list(temp))
+# # read_images = []        
+# c=0
+# for image in images_list:
+#     c+=1
+#     if(c%2000==0):
+#     	print("Input of full data: ", c/2000)
+#     img = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+#     temp = np.array(img)
+#     temp = temp.flatten()
+#     temp = temp.reshape(33600, 1)
+#     temp = temp.transpose()
+#     temp = pca.transform(temp)
+#     temp = temp.reshape(50)
+#     Xfull.append(list(temp))
 
-Xfull = np.array(Xfull)
+# Xfull = np.array(Xfull)
 
-np.save("dataXfull", Xfull)
+# np.save("dataXfull", Xfull)
 
-########### Input Y #########
-Y = []
+# ########### Input Y #########
+# Y = []
 
-for rewards in reward_list:
-	temp = []
-	with open(rewards) as fileX:
-		x_reader = csv.reader(fileX)
-		for row in x_reader:
-			temp.append(int(float(row[0])))
-		Y.append(temp)
+# for rewards in reward_list:
+# 	temp = []
+# 	with open(rewards) as fileX:
+# 		x_reader = csv.reader(fileX)
+# 		for row in x_reader:
+# 			temp.append(int(float(row[0])))
+# 		Y.append(temp)
 
-Y = np.array(Y)
-np.save("dataYfull", Y)
-#############################
+# Y = np.array(Y)
+# np.save("dataYfull", Y)
+# #############################
 
 # Loading
-Xfull = np.load("dataXfull.npy")
-print(Xfull.shape)
+# Xfull = np.load("dataXfull.npy")
+# print(Xfull.shape)
 
-Y = np.load("dataYfull.npy")
-print(Y.shape)
+# Y = np.load("dataYfull.npy")
+# print(Y.shape)
 
 ##########################################################################
 #EXTRA FUNCTIONS
@@ -131,8 +132,11 @@ def getcomb(j):
 ##########################################################################
 #GENERATING TRAINING DATA
 
-Xtrain = []
-Ytrain = []
+Xtrain_pos = []
+Ytrain_pos = []
+
+Xtrain_neg = []
+Ytrain_neg = []
 
 
 Yindexing = [None]*len(Y)
@@ -157,8 +161,8 @@ for i in range(len(Yindexing)):
 				for l in range(len(templist)):
 					final_index = Yindexing[i] + templist[l]
 					temptrain += list(Xfull[final_index])
-				Xtrain.append(temptrain)
-				Ytrain.append(1)
+				Xtrain_pos.append(temptrain)
+				Ytrain_neg.append(1)
 		else:
 			if(decision(0.15)):
 				combs = getcomb(j)
@@ -171,24 +175,55 @@ for i in range(len(Yindexing)):
 						for l in range(len(templist)):
 							final_index = Yindexing[i] + templist[l]
 							temptrain += list(Xfull[final_index])
-						Xtrain.append(temptrain)
-						Ytrain.append(Y[i][j])
+						Xtrain_neg.append(temptrain)
+						Ytrain_neg.append(Y[i][j])
 
 
 
-
-Xtrain = np.array(Xtrain)
-Ytrain = np.array(Ytrain)
-
+Xtrain = Xtrain_pos[0:10000] + Xtrain_neg[0:10000]
+Ytrain = Ytrain_pos[0:10000] + Ytrain_neg[0:10000]
 np.save("dataXtrain", Xtrain)
 np.save("dataYtrain", Ytrain)
 
-#Loading
 Xtrain = np.load("dataXtrain.npy")
-print(Xtrain.shape)
-
 Ytrain = np.load("dataYtrain.npy")
+print(Xtrain.shape)
 print(Ytrain.shape)
+
+
+
+
+
+Xtrain_pos = np.array(Xtrain_pos)
+Ytrain_pos = np.array(Ytrain_pos)
+Xtrain_neg = np.array(Xtrain_neg)
+Ytrain_neg = np.array(Ytrain_neg)
+
+
+np.save("dataXtrain_pos", Xtrain_pos)
+np.save("dataYtrain_pos", Ytrain_pos)
+np.save("dataXtrain_neg", Xtrain_neg)
+np.save("dataYtrain_neg", Ytrain_neg)
+
+
+
+#Loading
+Xtrain_pos = np.load("dataXtrain_pos.npy")
+Xtrain_neg = np.load("dataXtrain_neg.npy")
+print(Xtrain_pos.shape)
+print(Xtrain_neg.shape)
+
+
+
+Ytrain_pos = np.load("dataYtrain_pos.npy")
+Ytrain_neg = np.load("dataYtrain_neg.npy")
+print(Ytrain_pos.shape)
+print(Ytrain_neg.shape)
+
+
+
+
+
 
 ##########################################################################
 #TRAINING SVM
@@ -209,7 +244,7 @@ print("Postive in train: ", pos)
 print("Negative in train: ", neg)
 print("Total in train: ", len(Ytrain))
 
-clf = svm.SVC(gamma='auto', kernel='rbf')
+clf = svm.SVC(gamma='auto', kernel='linear')
 clf.fit(Xtrain, Ytrain)
 
 ##########################################################################
