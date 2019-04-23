@@ -15,6 +15,12 @@ import keras
 from keras import optimizers
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten, MaxPooling2D
+from keras.models import load_model
+# import tensorflow as tf
+
+# sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+
+
 
 folders50 = sorted(glob.glob("./train2/*"))
 foldersval = sorted(glob.glob("./validation/*"))
@@ -342,8 +348,8 @@ class DataGenrator(keras.utils.Sequence):
 		return num_batches
 
 	def __getitem__(self, index):
-		x = np.load("batches1/X_" + str(index) + ".npy")
-		y = np.load("batches1/Y_" + str(index) + ".npy")
+		x = np.load("batches1/X_" + str(index+1) + ".npy")/255
+		y = np.load("batches1/Y_" + str(index+1) + ".npy")
 		return x, y
 
 	def on_epoch_end(self):
@@ -380,26 +386,54 @@ class DataGenrator(keras.utils.Sequence):
 
 
 
-#Manish model
+# model = Sequential()
+# model.add(Conv2D(32, (3,3), strides=2, activation='relu', input_shape = (210,160,15)))
+# model.add(MaxPooling2D(pool_size=(2,2),strides=2))
 
-# def get_model():
-model = Sequential()
-model.add(Conv2D(32, (3,3), strides=2, activation='relu', input_shape = (210,160,15)))
-model.add(MaxPooling2D(pool_size=(2,2),strides=2))
+# model.add(Conv2D(64, (3,3), strides=2, activation='relu'))
+# model.add(MaxPooling2D(pool_size=(2,2),strides=2))
 
-model.add(Conv2D(64, (3,3), strides=2, activation='relu'))
-model.add(MaxPooling2D(pool_size=(2,2),strides=2))
+# model.add(Flatten())
+# model.add(Dense(2048, activation='relu'))
 
-model.add(Flatten())
-model.add(Dense(2048, activation='relu'))
+# model.add(Dense(1, activation='sigmoid'))
+# model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-model.add(Dense(1, activation='sigmoid'))
-model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
-# 	return model
+# training_generator = DataGenrator(128)
 
-training_generator = DataGenrator(128)
+# epochs = 1
 
-epochs = 20
 
-model.fit_generator(generator=training_generator, epochs = epochs, validation_data=(valX, valY), use_multiprocessing=True, workers=25)
+
+# model.fit_generator(generator=training_generator, epochs = epochs, validation_data=(valX, valY), use_multiprocessing=True, workers=6, verbose=1)
+
+# # for i in range(1, 864):
+# # 	t1 = "batches1/X_" + str(i) + ".npy"
+# # 	t2 = "batches1/Y_" + str(i) + ".npy"
+# # 	newX = np.load(t1)
+# # 	newY = np.load(t2)
+# # 	model.fit(x = newX, y = newY, epochs = epochs, validation_data=(valX, valY), verbose=1)
+
+
+# model.save("secondmodel")
+
+
+model = load_model("secondmodel")
+
+Ypred = model.predict_classes(valX)
+
+print(type(Ypred))
+
+accuracy = accuracy_score(valY, Ypred)
+print("Accuracy: ", accuracy)
+
+f1 = f1_score(valY, Ypred, average=None) 
+print(f1)
+
+print("F1 Score: ", np.mean(f1))
+
+confusion = confusion_matrix(valY, Ypred)
+print(confusion)
+
+
 
